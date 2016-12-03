@@ -9,6 +9,7 @@
 class Server {
 public:
     void accept();
+
     bool check_status();
 };
 

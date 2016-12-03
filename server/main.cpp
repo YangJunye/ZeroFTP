@@ -6,7 +6,7 @@
 
 int test_main() {
     Server server;
-    while(true) {
+    while (true) {
         server.accept();
         if (!server.check_status())
             break;
