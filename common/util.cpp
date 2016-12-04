@@ -38,3 +38,14 @@ void strip(string &str) {
     }
     str = str.substr(lpos, rpos - lpos + 1);
 }
+
+void parse_command(string &str, string &cmd, string &args) {
+    int pos = str.find_first_of(" ");
+    if (pos == string::npos) {
+        cmd = str;
+        args = "";
+    } else {
+        cmd = str.substr(0, pos);
+        args = str.substr(pos + 1, str.length() - pos - 1);
+    }
+}

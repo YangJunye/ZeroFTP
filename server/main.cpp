@@ -4,12 +4,8 @@
 
 #include "server.h"
 
-int test_main() {
+int main() {
     Server server;
-    while (true) {
-        server.accept();
-        if (!server.check_status())
-            break;
-    }
+    server.run();
     return 0;
 }

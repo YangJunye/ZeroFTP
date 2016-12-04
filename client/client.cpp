@@ -250,6 +250,9 @@ bool Client::login() {
     strip(username);
     send_command("USER " + username);
     Response res = get_response();
+    if (res.code == LOGIN_SUCCESS) {
+        return true;
+    }
     if (res.code != RIGHT_USERNAME) {
         return false;
     }
@@ -309,7 +312,7 @@ int Client::do_get(string &args) {
 }
 
 void Client::show_help() {
-    static string commands[] = {"get", "put", "ls", "dir", "cd", "pwd", "ftp", "help", "?"};
+    static string commands[] = {"get", "put", "ls", "dir", "cd", "pwd", "ftp", "bye", "quit", "exit", "help", "?"};
     cout << "Commands are:" << endl;
     for (auto str : commands) {
         cout << str << "\t\t";
