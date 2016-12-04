@@ -11,7 +11,6 @@
 #include <iostream>
 #include "client.h"
 #include "../common/const.h"
-#include "../common/util.h"
 
 using namespace std;
 

@@ -9,11 +9,12 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <fstream>
+#include <arpa/inet.h>
 
 using namespace std;
 
 Handler::Handler(pthread_t *p_thread, int id, int fd) : p_client_thread(p_thread), client_id(id),
-                                                                               client_fd(fd) {
+                                                        client_fd(fd) {
     init_users();
     is_passive = false;
     is_logined = false;
@@ -81,9 +82,14 @@ int Handler::exec(std::string &cmd, std::string &args) {
             return 0;
         }
         string dir = curr_dir.substr(1, curr_dir.size() - 1).c_str();
-        send_response(PATHNAME_CREATED, "\"" + dir + "\" is current directory");
+        send_response(PATHNAME_CREATED, "\"" + dir + "\" is current directory.");
     } else if (cmd == "TYPE") {
         send_response(COMMAND_OK, "Binary mode");
+    } else if (cmd == "FEAT") {
+        string str = to_string(211) + '-' + "Features:";
+        send(client_fd, (str + "\r\n").c_str(), str.length() + 2, 0);
+        write(client_fd, "EPRT\r\n", strlen("EPRT\r\n"));
+        send_response(211, "End");
     } else if (cmd == "PASV") {
         if (!is_logined) {
             send_response(NOT_LOGINED, "Not logged in.");
@@ -140,14 +146,17 @@ int Handler::enter_pasv_mode() {
     if (port < 0)
         return -1;
     char addr_port_buf[128];
-    int addr = local_addr.sin_addr.s_addr;
+
+    string ip = get_ip();
+    int addr = parse_ip(ip);
+
     sprintf(addr_port_buf, "(%d,%d,%d,%d,%d,%d)",
-            (addr & 0xFF),
-            ((addr & 0xFF00) >> 8),
-            ((addr & 0xFF0000) >> 16),
-            ((addr & 0xFF000000) >> 24),
-            (port >> 8),
-            (port & 0xFF));
+            (addr >> 24) & 0xFF,
+            (addr >> 16) & 0xFF,
+            (addr >> 8) & 0xFF,
+            addr & 0xFF,
+            (port >> 8) & 0xFF,
+            port & 0xFF);
     send_response(ENTER_PASSIVE, "Entering Passive Mode " + string(addr_port_buf));
     is_passive = true;
     return 0;
@@ -358,14 +367,14 @@ int Handler::handle_put(std::string &args) {
 
 int Handler::handle_cd(std::string &args) {
     string path = parse_path(args);
-        if (opendir(path.c_str())) {
-            send_response(ACTION_DONE, "Directory successfully changed.");
-            if (path[path.size() - 1] == '/')
-                curr_dir = path;
-            else curr_dir = path + '/';
-        } else {
-            send_response(ACTION_FAILED, "Failed to change directory.");
-        }
+    if (opendir(path.c_str())) {
+        send_response(ACTION_DONE, "Directory successfully changed.");
+        if (path[path.size() - 1] == '/')
+            curr_dir = path;
+        else curr_dir = path + '/';
+    } else {
+        send_response(ACTION_FAILED, "Failed to change directory.");
+    }
     return 0;
 }
 
@@ -373,7 +382,7 @@ void Handler::init_users() {
     fstream file;
     char line[300], username[100], password[100];
     file.open("users.txt", ios::in);
-    while(!file.eof()) {
+    while (!file.eof()) {
         file.getline(line, 300, '\n');
         sscanf(line, "%s %s\n", username, password);
         users[string(username)] = string(password);

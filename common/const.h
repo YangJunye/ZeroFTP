@@ -9,6 +9,7 @@ const int TRANSFERING = 125;
 const int OPENING_DATAPORT = 150;
 
 const int COMMAND_OK = 200;
+const int FEAT = 211;
 const int SYSTEM_TYPE = 215;
 const int SERVER_READY = 220;
 const int GOODBYE = 221;

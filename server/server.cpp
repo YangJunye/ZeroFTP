@@ -6,7 +6,6 @@
 #include "handler.h"
 #include <iostream>
 #include <arpa/inet.h>
-#include <fstream>
 
 using namespace std;
 

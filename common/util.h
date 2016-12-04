@@ -17,6 +17,10 @@ extern void strip(std::string &str);
 
 extern void parse_command(std::string &str, std::string &cmd, std::string &args);
 
+extern std::string get_ip();
+
+extern unsigned int parse_ip(const std::string &ip);
+
 struct Response {
     int code;
     std::string msg;
