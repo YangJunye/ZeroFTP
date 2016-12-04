@@ -6,12 +6,16 @@
 #define ZEROFTP_SERVER_H
 
 
+#include <string>
+#include <map>
+
 class Server {
 private:
     int client_id;
     int server_fd;
+    std::map<std::string, std::string> users;
 
-    void init();
+    void init_socket(int port);
 
 public:
     Server();
@@ -21,6 +25,8 @@ public:
     bool check_status();
 
     void run();
+
+    void run(int port);
 
     void loop();
 };

@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <string>
 #include <netinet/in.h>
+#include <map>
 
 class Handler {
 private:
@@ -17,8 +18,12 @@ private:
     int data_listen_fd;
     int data_conn_fd;
     bool is_passive;
+    bool need_login;
+    bool is_logined;
     sockaddr_in local_addr;
     std::string curr_dir;
+    std::string username;
+    std::map<std::string, std::string> users;
 
     int send_response(int code, const std::string &msg);
 
@@ -40,10 +45,12 @@ private:
 
     int recv_file(FILE *file);
 
+    void init_users();
+
 public:
     void process();
 
-    Handler(pthread_t *p_thread, int id, int fd, const std::string &ip);
+    Handler(pthread_t *p_thread, int id, int fd);
 
     ~Handler();
 
@@ -52,6 +59,8 @@ public:
     int handle_get(std::string &args);
 
     int handle_put(std::string &args);
+
+    int handle_cd(std::string &args);
 
 };
 

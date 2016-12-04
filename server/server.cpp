@@ -6,6 +6,7 @@
 #include "handler.h"
 #include <iostream>
 #include <arpa/inet.h>
+#include <fstream>
 
 using namespace std;
 
@@ -17,7 +18,6 @@ void *handle_client(void *_handler) {
 }
 
 void Server::accept() {
-    string host = "127.0.0.1";
     sockaddr_in client_addr;
     socklen_t sin_size = sizeof(struct sockaddr_in);
     int client_fd = ::accept(server_fd, (sockaddr *) &client_addr, &sin_size);
@@ -30,7 +30,7 @@ void Server::accept() {
     ntohs(client_addr.sin_port) << \
     endl;
     pthread_t *client_thread = new pthread_t;
-    Handler *handler = new Handler(client_thread, client_id, client_fd, host);
+    Handler *handler = new Handler(client_thread, client_id, client_fd);
     pthread_create(client_thread, NULL, handle_client, (void *) handler);
     pthread_detach(*client_thread);
 }
@@ -39,8 +39,13 @@ bool Server::check_status() {
     return false;
 }
 
+void Server::run(int port) {
+    init_socket(port);
+    loop();
+}
+
 void Server::run() {
-    init();
+    init_socket(2016);
     loop();
 }
 
@@ -53,9 +58,7 @@ void Server::loop() {
     }
 }
 
-void Server::init() {
-//    int port = 21;
-    int port = 4016;
+void Server::init_socket(int port) {
     int backlog = 5;
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0)
@@ -78,10 +81,13 @@ void Server::init() {
     }
     if (listen(server_fd, backlog))
         exit(-1);
+    cout << "Server is running." << endl;
 }
 
 Server::Server() {
     client_id = -1;
 }
+
+
 
 

@@ -6,11 +6,8 @@
 #define ZEROFTP_CLIENT_H
 
 #include <string>
+#include "../common/util.h"
 
-struct Response {
-    int code;
-    std::string msg;
-};
 
 struct Command {
     std::string cmd;

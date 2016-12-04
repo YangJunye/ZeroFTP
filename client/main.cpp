@@ -14,6 +14,5 @@ int main(int argc, char **argv) {
     } else if (argc == 3) {
         client.run(argv[1], atoi(argv[2]));
     }
-//    client.run("59.66.159.73", 21);
     return 0;
 }

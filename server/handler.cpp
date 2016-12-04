@@ -8,12 +8,15 @@
 #include <iostream>
 #include <unistd.h>
 #include <dirent.h>
+#include <fstream>
 
 using namespace std;
 
-Handler::Handler(pthread_t *p_thread, int id, int fd, const std::string &ip) : p_client_thread(p_thread), client_id(id),
+Handler::Handler(pthread_t *p_thread, int id, int fd) : p_client_thread(p_thread), client_id(id),
                                                                                client_fd(fd) {
+    init_users();
     is_passive = false;
+    is_logined = false;
     curr_dir = "./";
     cout << "Client id : " << client_id << endl;
 }
@@ -38,6 +41,7 @@ void Handler::process() {
             parse_command(str, cmd, args);
             int is_end = exec(cmd, args);
             if (is_end == 1) {
+                cout << "Client " << client_id << " quit!" << endl;
                 break;
             }
         } else {
@@ -55,49 +59,68 @@ int Handler::send_response(int code, const std::string &msg) {
 int Handler::exec(std::string &cmd, std::string &args) {
     cout << "Client " << client_id << " : [" << cmd << ' ' << args << ']' << endl;
     if (cmd == "USER") {
-        send_response(LOGIN_SUCCESS, "User logged in, proceed.");
+        if (need_login) {
+            send_response(RIGHT_USERNAME, "User name okay, need password.");
+            username = args;
+        } else {
+            send_response(LOGIN_SUCCESS, "User logged in, proceed.");
+        }
     } else if (cmd == "PASS") {
-        send_response(LOGIN_SUCCESS, "User logged in, proceed.");
+        if (users[username] == "" || users[username] != args) {
+            is_logined = false;
+            send_response(NOT_LOGINED, "Not logged in.");
+        } else {
+            is_logined = true;
+            send_response(LOGIN_SUCCESS, "User logged in, proceed.");
+        }
     } else if (cmd == "SYST") {
         send_response(SYSTEM_TYPE, "UNIX Type: L8");
     } else if (cmd == "PWD") {
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
+            return 0;
+        }
         string dir = curr_dir.substr(1, curr_dir.size() - 1).c_str();
         send_response(PATHNAME_CREATED, "\"" + dir + "\" is current directory");
     } else if (cmd == "TYPE") {
         send_response(COMMAND_OK, "Binary mode");
     } else if (cmd == "PASV") {
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
+            return 0;
+        }
         int ret = enter_pasv_mode();
         if (ret < 0) {
             cout << "Enter PASV Mode Error." << endl;
             return 1;
         }
-        return 0;
     } else if (cmd == "LIST") {
-        data_conn_fd = get_data_fd();
-        if (data_conn_fd < 0) {
-            cout << "Data Connection Accept Error" << endl;
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
             return 0;
         }
         if (handle_ls(curr_dir) < 0) {
             cout << "Send List Data Error" << endl;
             return 0;
         }
-        close(data_conn_fd);
-        send_response(CLOSE_DATA_CONNECTION, "Transfer complete.");
     } else if (cmd == "CWD") {
-        string path = parse_path(args);
-        if (opendir(path.c_str())) {
-            send_response(ACTION_DONE, "Directory successfully changed.");
-            if (path[path.size() - 1] == '/')
-                curr_dir = path;
-            else curr_dir = path + '/';
-        } else {
-            send_response(ACTION_FAILED, "Failed to change directory.");
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
+            return 0;
         }
+        handle_cd(args);
     } else if (cmd == "RETR") {
-        return handle_get(args);
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
+            return 0;
+        }
+        handle_get(args);
     } else if (cmd == "STOR") {
-        return handle_put(args);
+        if (!is_logined) {
+            send_response(NOT_LOGINED, "Not logged in.");
+            return 0;
+        }
+        handle_put(args);
     } else if (cmd == "QUIT") {
         send_response(GOODBYE, "Goodbye, closing session.");
         return 1;
@@ -166,6 +189,11 @@ int Handler::init_data_listen_fd() {
 }
 
 int Handler::handle_ls(string &path) {
+    data_conn_fd = get_data_fd();
+    if (data_conn_fd < 0) {
+        cout << "Data Connection Accept Error" << endl;
+        return 0;
+    }
     int pipefd[2];
     if (pipe(pipefd))
         return -1;
@@ -197,6 +225,8 @@ int Handler::handle_ls(string &path) {
         }
     }
     close(pipefd[0]);
+    close(data_conn_fd);
+    send_response(CLOSE_DATA_CONNECTION, "Transfer complete.");
     return 0;
 }
 
@@ -324,4 +354,29 @@ int Handler::handle_put(std::string &args) {
     fclose(file);
     send_response(CLOSE_DATA_CONNECTION, "Data Connection Closed.");
     return 0;
+}
+
+int Handler::handle_cd(std::string &args) {
+    string path = parse_path(args);
+        if (opendir(path.c_str())) {
+            send_response(ACTION_DONE, "Directory successfully changed.");
+            if (path[path.size() - 1] == '/')
+                curr_dir = path;
+            else curr_dir = path + '/';
+        } else {
+            send_response(ACTION_FAILED, "Failed to change directory.");
+        }
+    return 0;
+}
+
+void Handler::init_users() {
+    fstream file;
+    char line[300], username[100], password[100];
+    file.open("users.txt", ios::in);
+    while(!file.eof()) {
+        file.getline(line, 300, '\n');
+        sscanf(line, "%s %s\n", username, password);
+        users[string(username)] = string(password);
+    }
+    need_login = users.size() > 0;
 }
