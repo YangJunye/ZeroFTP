@@ -1,0 +1,4 @@
+*.o
+CMakeLists.txt
+ftp
+ftp-server

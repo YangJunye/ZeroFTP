@@ -70,7 +70,10 @@ void Server::init() {
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &optval, sizeof(optval)))
         exit(-1);
     if (::bind(server_fd, server_addr_ptr, sizeof(server_addr)) < 0) {
-        cout << "Bind Error. Are you root?" << endl;
+        if (port < 1024)
+            cout << "Bind Error. Are you root?" << endl;
+        else
+            cout << "Port is being used." << endl;
         exit(-1);
     }
     if (listen(server_fd, backlog))
