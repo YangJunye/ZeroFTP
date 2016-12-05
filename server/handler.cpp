@@ -8,8 +8,10 @@
 #include <iostream>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/wait.h>
 #include <fstream>
 #include <arpa/inet.h>
+#include <string.h>
 
 using namespace std;
 
@@ -137,7 +139,7 @@ int Handler::exec(std::string &cmd, std::string &args) {
 }
 
 int Handler::enter_pasv_mode() {
-    if (!is_passive)
+    if (is_passive)
         ::close(data_listen_fd);
     if (init_data_listen_fd() < 0) {
         return -1;

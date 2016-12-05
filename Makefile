@@ -1,8 +1,5 @@
-OBJ_DIR = ./obj
-BIN_DIR = ./bin
-
 CC = g++
-CXXFLAGS += -std=c++11 -Wall -O3
+CXXFLAGS += -std=c++11 -w -O3
 
 all: ftp ftp-server
 .PHONY: clean
@@ -13,7 +10,7 @@ server = server/main.o server/server.o server/handler.o common/util.o
 ftp: $(client)
 	$(CC) -o $@ $^
 ftp-server: $(server)
-	$(CC) -o $@ $^
+	$(CC) -pthread -o $@ $^
 
 
 client/main.o: client/main.cpp

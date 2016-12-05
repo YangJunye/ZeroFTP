@@ -7,6 +7,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <cstdlib>
+#include <string.h>
+#include <ifaddrs.h>
 #include "util.h"
 
 using namespace std;
@@ -53,16 +55,29 @@ void parse_command(string &str, string &cmd, string &args) {
     }
 }
 
-string get_ip() {
-    char ip[256];
-    char host[256] = {0};
-    if (gethostname(host, sizeof(host)) < 0)
-        return "";
-    struct hostent *hp;
-    if ((hp = gethostbyname(host)) == NULL)
-        return "";
-    strcpy(ip, inet_ntoa(*(struct in_addr *) hp->h_addr));
-    return string(ip);
+unsigned int get_ip() {
+    struct ifaddrs *if_addr_struct = NULL;
+    struct ifaddrs *ifa = NULL;
+    void *tmp_addr_ptr = NULL;
+    unsigned int ip = 0;
+    getifaddrs(&if_addr_struct);
+    for (ifa = if_addr_struct; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) {
+            continue;
+        }
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            tmp_addr_ptr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
+            char addr_buf[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, tmp_addr_ptr, addr_buf, INET_ADDRSTRLEN);
+            ip = parse_ip(string(addr_buf));
+            int first = ((ip >> 24) & 0xFF);
+            if (first != 0 && first != 127 && first != 10)
+                break;
+        }
+    }
+    if (if_addr_struct != NULL)
+        freeifaddrs(if_addr_struct);
+    return ip;
 }
 
 unsigned int parse_ip(const string &ip) {

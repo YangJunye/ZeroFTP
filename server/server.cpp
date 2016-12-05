@@ -7,6 +7,8 @@
 #include "../common/util.h"
 #include <iostream>
 #include <arpa/inet.h>
+#include <string.h>
+#include <pthread.h>
 
 using namespace std;
 
@@ -86,7 +88,7 @@ void Server::init_socket(int port) {
 
 Server::Server() {
     client_id = -1;
-    host = parse_ip(get_ip());
+    host = get_ip();
 }
 
 
