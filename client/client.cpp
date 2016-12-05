@@ -37,7 +37,6 @@ void Client::run(const char *host, int port) {
 
 void Client::connect(const char *host, int port) {
     this->host = string(host);
-//    this->port = port;
     client_fd = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -69,7 +68,7 @@ void Client::login(const string &username, const string &password) {
 
 void Client::do_pwd() {
     if (!is_connected) {
-        cout << "Not connected" << endl;
+        cout << "Not connected." << endl;
         return;
     }
     send_command("PWD");
@@ -88,7 +87,7 @@ Response Client::get_response() {
     char recv_buf[256];
     int length = recv(client_fd, recv_buf, 256, 0);
     if (length < 0) {
-        cout << "Server error. Quit" << endl;
+        cout << "Server error. Quit." << endl;
         exit(0);
     }
     recv_buf[length - 2] = '\0';
@@ -111,7 +110,7 @@ void Client::do_goodbye() {
 
 void Client::do_ls() {
     if (!is_connected) {
-        cout << "Not connected" << endl;
+        cout << "Not connected." << endl;
         return;
     }
     send_command("PASV");
@@ -142,7 +141,7 @@ void Client::do_ls() {
 
 void Client::do_cd(string &args) {
     if (!is_connected) {
-        cout << "Not connected" << endl;
+        cout << "Not connected." << endl;
         return;
     }
     send_command("CWD " + args);
@@ -232,9 +231,12 @@ void Client::loop() {
             do_put(args);
         } else if (cmd == "ftp") {
             do_ftp(args);
+        } else if (cmd == "user") {
+            do_user(args);
         } else if (cmd == "?" || cmd == "help") {
             show_help();
         } else {
+            cout << "Invalid command." << endl;
             continue;
         }
     }
@@ -242,34 +244,17 @@ void Client::loop() {
 
 
 bool Client::login() {
-    string username, password;
+    string username;
     cout << "Username: ";
     if (!getline(cin, username))
         return false;
     strip(username);
-    send_command("USER " + username);
-    Response res = get_response();
-    if (res.code == LOGIN_SUCCESS) {
-        return true;
-    }
-    if (res.code != RIGHT_USERNAME) {
-        return false;
-    }
-    cout << "Password: ";
-    hide_stdin();
-    if (!getline(cin, password))
-        return false;
-    show_stdin();
-    cout << endl;
-    strip(password);
-    send_command("PASS " + password);
-    res = get_response();
-    return res.code == LOGIN_SUCCESS;
+    return do_user(username);
 }
 
 int Client::do_get(string &args) {
     if (!is_connected) {
-        cout << "Not connected" << endl;
+        cout << "Not connected." << endl;
         return -1;
     }
     string filename = get_filename(args);
@@ -311,7 +296,8 @@ int Client::do_get(string &args) {
 }
 
 void Client::show_help() {
-    static string commands[] = {"get", "put", "ls", "dir", "cd", "pwd", "ftp", "bye", "quit", "exit", "help", "?"};
+    static string commands[] = {"get", "put", "ls", "dir", "user", "pasv", "cd", "pwd", "ftp", "bye", "quit", "exit",
+                                "help", "?"};
     cout << "Commands are:" << endl;
     for (auto str : commands) {
         cout << str << "\t\t";
@@ -321,7 +307,7 @@ void Client::show_help() {
 
 int Client::do_put(string &args) {
     if (!is_connected) {
-        cout << "Not connected" << endl;
+        cout << "Not connected." << endl;
         return -1;
     }
     FILE *rfile = fopen(args.c_str(), "rb");
@@ -374,6 +360,28 @@ void Client::do_ftp(string &args) {
     connect(host.c_str(), port);
     if (is_connected)
         login();
+}
+
+bool Client::do_user(std::string &args) {
+    send_command("USER " + args);
+    Response res = get_response();
+    if (res.code == LOGIN_SUCCESS) {
+        return true;
+    }
+    if (res.code != RIGHT_USERNAME) {
+        return false;
+    }
+    string password;
+    cout << "Password: ";
+    hide_stdin();
+    if (!getline(cin, password))
+        return false;
+    show_stdin();
+    cout << endl;
+    strip(password);
+    send_command("PASS " + password);
+    res = get_response();
+    return res.code == LOGIN_SUCCESS;
 }
 
 

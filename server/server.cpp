@@ -4,6 +4,7 @@
 
 #include "server.h"
 #include "handler.h"
+#include "../common/util.h"
 #include <iostream>
 #include <arpa/inet.h>
 
@@ -29,7 +30,7 @@ void Server::accept() {
     ntohs(client_addr.sin_port) << \
     endl;
     pthread_t *client_thread = new pthread_t;
-    Handler *handler = new Handler(client_thread, client_id, client_fd);
+    Handler *handler = new Handler(client_thread, client_id, client_fd, host);
     pthread_create(client_thread, NULL, handle_client, (void *) handler);
     pthread_detach(*client_thread);
 }
@@ -85,6 +86,7 @@ void Server::init_socket(int port) {
 
 Server::Server() {
     client_id = -1;
+    host = parse_ip(get_ip());
 }
 
 

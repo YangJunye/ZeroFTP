@@ -9,15 +9,10 @@
 #include "../common/util.h"
 
 
-struct Command {
-    std::string cmd;
-    std::string args;
-};
-
 class Client {
 private:
     bool is_connected;
-    int client_fd, data_conn_fd, port;
+    int client_fd, port;
     std::string host;
 
     void send_command(const std::string &str);
@@ -46,6 +41,8 @@ public:
     bool login();
 
     void login(const std::string &username, const std::string &password);
+
+    bool do_user(std::string &args);
 
     void do_ftp(std::string &args);
 

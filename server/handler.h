@@ -13,6 +13,7 @@
 class Handler {
 private:
     pthread_t *p_client_thread;
+    unsigned int local_ip;
     int client_id;
     int client_fd;
     int data_listen_fd;
@@ -50,7 +51,7 @@ private:
 public:
     void process();
 
-    Handler(pthread_t *p_thread, int id, int fd);
+    Handler(pthread_t *p_thread, int id, int fd, unsigned int ip);
 
     ~Handler();
 

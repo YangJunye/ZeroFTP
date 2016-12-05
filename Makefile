@@ -15,14 +15,12 @@ ftp: $(client)
 ftp-server: $(server)
 	$(CC) -o $@ $^
 
-${OBJ_DIR}/%.o: client/%.h
-	$(CC) $< -o $@
 
 client/main.o: client/main.cpp
 client/client.o: client/client.h
 server/main.o: server/main.cpp
 server/server.o: server/server.h
-server/handler.o: server/handler.o
+server/handler.o: server/handler.h
 common/util.o: common/util.h
 
 clean:

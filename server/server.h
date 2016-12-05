@@ -13,7 +13,7 @@ class Server {
 private:
     int client_id;
     int server_fd;
-    std::map<std::string, std::string> users;
+    unsigned int host;
 
     void init_socket(int port);
 
